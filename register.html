@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  Register
+{% endblock %}
+
+{% block body %}
+  <h5> Please Register with your choosen Username and Password. </h5>
+  <form action="{{ url_for('register') }}" method="post">
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" class="form-control" id="username" name="username">
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" class="form-control" id="password" name="password">
+    </div>
+    <div class="form-group">
+      <label for="confirm password">Confirm password:</label>
+      <input type="password" class="form-control" id="confirm password" name="confirm password">
+    </div>
+    <button type="submit" class="btn btn-primary">Register</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}
+  Search
+{% endblock %}
+
+{% block body %}
+  <h1> Book Search </h1>
+  <form action="{{url_for('search') }}" method="post">
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" placeholder="Enter isbn, title, or author" name ="info" aria-label="info" aria-describedby="button-addon2">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Search</button>
+        </div>
+    </div>
+  </form>
+  <ul>
+    {% for result in results %}
+    <li>
+      <a href="{{ url_for('info', book_id=result.id) }}">
+         Title: {{ result.title}}, Author: {{ result.author}}, ID: {{result.id}}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {{ message }}
+{% endblock %}
