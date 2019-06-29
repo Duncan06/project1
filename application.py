@@ -127,7 +127,7 @@ def search():
             if search == "":
                 return render_template("search.html", message="No results found.")
 
-            results = db.execute("SELECT * FROM books WHERE isbn LIKE :search OR UPPER(title) LIKE :search OR UPPER(author) LIKE :search",
+            results = db.execute("SELECT * FROM books WHERE isbn LIKE :search OR UPPER(title) LIKE :search OR UPPER(author) LIKE :search LIMIT 10",
                 {"search": "%" + search.upper() + "%"}).fetchall()
 
             return render_template("search.html", results=results)
@@ -137,10 +137,9 @@ def search():
 def info(book_id):
     """show details of selection"""
 
-    book = db.exectue("SELECT * FROM books WHERE id LIKE :book_id", {"id":book_id}).fetchone()
+    book = db.execute("SELECT * FROM books WHERE id = :book_id", {"book_id":book_id}).fetchone()
 
     if book is None:
         return render_template("error.html", message="No such book with this id.")
 
-    else:
-        return render_template("info.html", book=book)
+    return render_template("info.html", book=book)

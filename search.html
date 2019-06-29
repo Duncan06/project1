@@ -18,7 +18,7 @@
     {% for result in results %}
     <li>
       <a href="{{ url_for('info', book_id=result.id) }}">
-         Title: {{ result.title}}, Author: {{ result.author}}, ID: {{result.id}}
+         Title: {{ result.title}}, Author: {{ result.author}}
       </a>
     </li>
     {% endfor %}
