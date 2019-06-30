@@ -1,4 +1,5 @@
 import os
+import requests
 
 from flask import Flask, session, flash, redirect, render_template, request, url_for
 from flask_session import Session
@@ -143,3 +144,15 @@ def info(book_id):
         return render_template("error.html", message="No such book with this id.")
 
     return render_template("info.html", book=book)
+
+@app.route("/api/<isbn>")
+def book_api(isbn):
+
+    isbns = db.execute("SELECT isbn FROM books WHERE isbn = :isbn", {"isbn":isbn}).fetchone()
+
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "qYVQdZbwzlpNz3XKprOLPQ", "isbns": isbns})
+
+    if res.status_code !=200:
+        raise Exception("ERROR: API request unsuccessful.")
+
+    data = res.json()
