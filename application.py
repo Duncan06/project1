@@ -201,7 +201,10 @@ def book_api(isbn):
             count += 1
             total += user.rating
 
-    avg = total/count
+    if count != 0:
+        avg = total/count
+    else:
+        avg = 0
 
     return jsonify ({
         "title": book.title,
