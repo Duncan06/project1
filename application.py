@@ -1,7 +1,7 @@
 import os
 import requests
 
-from flask import Flask, session, flash, redirect, render_template, request, url_for
+from flask import Flask, session, flash, redirect, render_template, request, url_for, jsonify
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy import create_engine
@@ -134,7 +134,7 @@ def search():
             return render_template("search.html", results=results)
 
 
-@app.route("/search/<int:book_id>")
+@app.route("/search/<int:book_id>", methods=["GET", "POST"])
 def info(book_id):
     """show details of selection"""
 
@@ -143,16 +143,71 @@ def info(book_id):
     if book is None:
         return render_template("error.html", message="No such book with this id.")
 
-    return render_template("info.html", book=book)
+    #GoodReads API
+    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "qYVQdZbwzlpNz3XKprOLPQ", "isbns": book.isbn})
+
+    #Set default values for data if none received.
+    data = {"ratings_count": None, "average_rating": None}
+
+    #If status code success
+    if res.status_code ==  200:
+        data = res.json()["books"][0]
+
+
+    if request.method == "POST":
+
+        if not request.form.get("review"):
+            return render_template("error.html", message="Please submit a review first.")
+
+        user_id = session["user_id"]
+
+        rating = request.form.get("rating")
+
+        review = request.form.get("review")
+
+        user = db.execute("SELECT username FROM users WHERE id = :user_id", {"user_id":user_id}).fetchone()[0]
+
+        if db.execute("SELECT id FROM reviews WHERE user_id = :user_id AND book_id = :book_id", {"user_id":user_id, "book_id": book_id}).fetchone() is None:
+
+            db.execute("INSERT INTO reviews (user_id, book_id, rating, review, username) VALUES (:user_id, :book_id, :rating, :review, :username)",
+                {"user_id":user_id, "book_id":book_id, "rating":rating, "review":review, "username":user})
+
+        else:
+            db.execute("UPDATE reviews SET review = :review, rating = :rating WHERE user_id = :user_id AND book_id = :book_id",
+                {"user_id":user_id, "book_id":book_id, "rating":rating, "review":review})
+
+        db.commit()
+
+    posts = db.execute("SELECT review, rating, username FROM reviews WHERE book_id = :book_id", {"book_id":book_id}).fetchall()
+
+    return render_template("info.html", posts=posts, book=book, data=data)
+
 
 @app.route("/api/<isbn>")
 def book_api(isbn):
 
-    isbns = db.execute("SELECT isbn FROM books WHERE isbn = :isbn", {"isbn":isbn}).fetchone()
+    book = db.execute("SELECT * FROM books WHERE isbn = :isbn", {"isbn":isbn}).fetchone()
 
-    res = requests.get("https://www.goodreads.com/book/review_counts.json", params={"key": "qYVQdZbwzlpNz3XKprOLPQ", "isbns": isbns})
+    if book is None:
+        return jsonify ({"error": "Invalid book isbn."}), 422
 
-    if res.status_code !=200:
-        raise Exception("ERROR: API request unsuccessful.")
+    userdata = db.execute("SELECT rating FROM reviews WHERE book_id = :id", {"id":book.id}).fetchall()
 
-    data = res.json()
+    count = 0
+
+    total = 0
+
+    for user in userdata:
+            count += 1
+            total += user.rating
+
+    avg = total/count
+
+    return jsonify ({
+        "title": book.title,
+        "author": book.author,
+        "year": book.year,
+        "isbn": book.isbn,
+        "ratings_count": count,
+        "average_score": avg
+    })
